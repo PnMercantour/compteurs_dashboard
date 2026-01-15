@@ -59,9 +59,11 @@ sudo apt update && sudo apt install python3-pip python3-venv nginx git -y
 ```
 
 ### 2. Installation de l'App
+Créez un utilisateur ou utilisez www-data. L'utilisateur créé s'appellera WHOAMI dans la suite de la documentation, il sera à remplacer par l'utilisateur créé.
+
 ```bash
-# Clonez votre projet ou copiez les fichiers dans /var/www/compteurs ou /home/user/compteurs
-cd /home/user/compteurs/compteurs_dashboard
+# Clonez votre projet ou copiez les fichiers dans /var/www ou /home/WHOAMI
+cd /home/WHOAMI/compteurs_dashboard
 
 # Créer l'environnement virtuel
 python3 -m venv .venv
@@ -83,15 +85,17 @@ Description=Gunicorn Compteurs Dashboard
 After=network.target
 
 [Service]
-User=www-data
-WorkingDirectory=/home/user/compteurs/compteurs_dashboard
-Environment="PATH=/home/user/compteurs/compteurs_dashboard/.venv/bin"
+User=WHOAMI
+WorkingDirectory=/home/WHOAMI/compteurs_dashboard
+Environment="PATH=/home/user/compteurs_dashboard/.venv/bin"
 # Lancer l'app avec 3 workers
-ExecStart=/home/user/compteurs/compteurs_dashboard/.venv/bin/gunicorn --workers 3 --bind 127.0.0.1:8050 app:server
+ExecStart=/home/WHOAMI/compteurs_dashboard/.venv/bin/gunicorn --workers 3 --bind 127.0.0.1:8050 app:server
 
 [Install]
 WantedBy=multi-user.target
 ```
+Remplacez WHOAMI par l'utilisateur qui lance l'application
+
 
 Activez le service :
 ```bash
@@ -133,3 +137,9 @@ sudo systemctl restart nginx
     ```bash
     sudo systemctl restart compteurs
     ```
+
+
+### Possibilité d'évolutions
+- Pouvoir intégrer plusieurs sites
+- Retravailler les graphiques et mettre des interprétations
+- Penser à quelles données on veut afficher
