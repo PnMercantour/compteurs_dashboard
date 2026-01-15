@@ -162,7 +162,7 @@ if __name__ == "__main__":
     
     # Calculate paths relative to this script
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    default_root = os.path.abspath(os.path.join(script_dir, ".."))
+    default_root = os.path.abspath(os.path.join(script_dir))
     default_store = os.path.join(default_root, "data", "parquet_store")
 
     # Argument Parser
