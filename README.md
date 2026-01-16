@@ -140,6 +140,7 @@ sudo systemctl restart nginx
 
 
 ### Possibilité d'évolutions
+- Script automatique de mise à jour des données (Eventuellement un dossier spécifique accesible avec une interface graphique, dès qu'on repère un changement dans le dossier relance le script build_dataset)
 - Pouvoir intégrer plusieurs sites
 - Retravailler les graphiques et mettre des interprétations
 - Penser à quelles données on veut afficher
