@@ -29,9 +29,11 @@ def create_layout(df):
         # Header
         dbc.Row([
             dbc.Col(html.Img(src="https://media.mercantour.eu/logos/logo_auto-productions_pnm_quadri_txt_vert.png", style={'height': '80px'}), width=2, className="d-flex align-items-center"),
-            dbc.Col(html.H2(f"DASHBOARD {site_name}", className="text-center text-uppercase fw-bold mb-0", style={'letterSpace': '2px'}), width=8),
             dbc.Col([
-                dbc.Button("📍", id="map-btn", color="primary", outline=True, className="rounded-circle fw-bold shadow-sm me-2", style={"width": "35px", "height": "35px", "padding": "0"}, title="Voir la carte"),
+                html.H2(f"DASHBOARD {site_name}", className="mb-0 text-uppercase fw-bold", style={'letterSpace': '2px'}),
+                dbc.Button("📍", id="map-btn", color="light", className="ms-3 rounded-circle shadow-sm border-0 d-flex align-items-center justify-content-center", style={"width": "40px", "height": "40px", "fontSize": "1.4rem", "backgroundColor": "transparent"}, title="Voir la carte")
+            ], width=8, className="d-flex justify-content-center align-items-center"),
+            dbc.Col([
                 dbc.Button("?", id="help-btn", color="secondary", className="rounded-circle text-black fw-bold shadow-sm", style={"width": "35px", "height": "35px", "padding": "0"}),
                 dbc.Popover([
                     dbc.PopoverHeader("Astuces Zoom & Navigation"),
@@ -44,6 +46,14 @@ def create_layout(df):
                             html.Strong("🔙 Dézoomer :"), 
                             html.Span(" Double-cliquez n'importe où sur le graphique.")
                         ], className="mb-2"),
+                        html.Hr(),
+                        html.H6("Lexique", className="fw-bold mb-2"),
+                        html.Div([html.Strong("TMJ :"), " Trafic Moyen Journalier (Moyenne quotidienne sur la période)."], className="mb-1"),
+                        html.Div([html.Strong("TMJ JO :"), " Trafic Moyen Journalier des Jours Ouvrés (Lun-Ven)."], className="mb-1"),
+                        html.Div([html.Strong("TMJ WE :"), " Trafic Moyen Journalier des Week-ends (Sam-Dim)."], className="mb-1"),
+                        html.Div([html.Strong("VT :"), " Vitesse Moyenne (si disponible)."], className="mb-1"),
+                        html.Div([html.Strong("VL :"), " Véhicules Légers (Voitures < 3.5t)."], className="mb-1"),
+                        html.Div([html.Strong("PL :"), " Poids Lourds (> 3.5t)."], className="mb-1"),
                     ], className="small")
                 ], target="help-btn", trigger="focus", placement="bottom-end")
             ], width=2, className="d-flex justify-content-end align-items-center")
@@ -64,7 +74,8 @@ def create_layout(df):
                             end_date=max_date,
                             display_format='DD/MM/YYYY',
                             style={'border': '1px solid #ddd', 'borderRadius': '5px'}
-                        )
+                        ),
+                        dbc.Button("📥", id="export-btn", color="success", outline=True, className="ms-3 rounded-circle shadow-sm", style={"width": "38px", "height": "38px", "padding": "0", "display": "flex", "alignItems": "center", "justifyContent": "center"}, title="Exporter le rapport")
                     ], className="d-flex align-items-center justify-content-center")
                 ], className="mb-4 shadow-sm border-0")
             ], width=12)
@@ -159,14 +170,14 @@ def create_layout(df):
                     dbc.Row([
                         dbc.Col(dbc.Card([
                             dbc.CardHeader("EVOLUTION DU TRAFIC", className="bg-white fw-bold"),
-                            dbc.CardBody(dcc.Graph(id='timeline-graph', config={'displayModeBar': False}))
+                            dbc.CardBody(dcc.Graph(id='timeline-graph'))
                         ], className="shadow-sm border-0"), width=12)
                     ], className="mb-4"),
 
                     dbc.Row([
                         dbc.Col(dbc.Card([
                             dbc.CardHeader("MATRICE D'INTENSITÉ (JOUR/HEURE)", className="bg-white fw-bold"),
-                            dbc.CardBody(dcc.Graph(id='heatmap-day-hour', config={'displayModeBar': False}))
+                            dbc.CardBody(dcc.Graph(id='heatmap-day-hour'))
                         ], className="shadow-sm border-0"), width=12)
                     ])
                 ], fluid=True)
@@ -194,14 +205,14 @@ def create_layout(df):
                     dbc.Row([
                         dbc.Col(dbc.Card([
                             dbc.CardHeader("VOLUMES ANNUELS (TMJ)", className="bg-white fw-bold"),
-                            dbc.CardBody(dcc.Graph(id='annual-evolution-bar', config={'displayModeBar': False}))
+                            dbc.CardBody(dcc.Graph(id='annual-evolution-bar'))
                         ], className="shadow-sm border-0"), width=12)
                     ], className="mb-4"),
 
                     dbc.Row([
                         dbc.Col(dbc.Card([
                             dbc.CardHeader("PROFILS SAISONNIERS COMPARÉS", className="bg-white fw-bold"),
-                            dbc.CardBody(dcc.Graph(id='annual-seasonality-line', config={'displayModeBar': False}))
+                            dbc.CardBody(dcc.Graph(id='annual-seasonality-line'))
                         ], className="shadow-sm border-0"), width=12)
                     ])
                 ], fluid=True)
@@ -226,6 +237,9 @@ def create_layout(df):
                 dbc.Button("Fermer", id="close-map-btn", className="ms-auto", n_clicks=0)
             )
         ], id="map-modal", size="lg", is_open=False),
+
+        # Download Component
+        dcc.Download(id="download-report"),
         
     ], fluid=True, className="bg-light", style={'minHeight': '100vh', 'paddingBottom': '2rem'})
     

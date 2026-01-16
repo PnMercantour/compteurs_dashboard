@@ -12,6 +12,7 @@ Cette application est **générique** : elle s'adapte automatiquement au site et
     *   Heatmap (Jour/Heure) des flux.
     *   Comparaison pluriannuelle (Saisonnalité, TMJ par an).
 *   **Interface** : Graphiques interactifs et bulles d'aide.
+*   **Rapport** : Export d'un rapport complet au format HTML (incluant tableaux de synthèse, graphiques et lexique).
 
 ## Installation Locale
 

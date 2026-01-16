@@ -1,7 +1,8 @@
-from dash import Input, Output, html, State, ctx
+from dash import Input, Output, html, State, ctx, dcc
 import dash_bootstrap_components as dbc
 import plotly.express as px
 import pandas as pd
+from report_generator import generate_html_report # Local Import
 
 # --- Constants ---
 # Professional Palette (Flat/Modern)
@@ -58,6 +59,12 @@ DAYS_ORDER_FR = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'D
 
 def register_callbacks(app, df):
     
+    # --- Headers / Filters Helper ---
+    def _filter_by_date(df, start_date, end_date):
+        if not start_date or not end_date:
+            return df
+        return df[(df['Datetime'] >= start_date) & (df['Datetime'] <= end_date)]
+
     # --- Map Modal Callback ---
     @app.callback(
         Output("map-modal", "is_open"),
@@ -68,6 +75,43 @@ def register_callbacks(app, df):
         if n1 or n2:
             return not is_open
         return is_open
+
+    # --- Export Report Callback ---
+    @app.callback(
+        Output("download-report", "data"),
+        Input("export-btn", "n_clicks"),
+        [State('period-picker', 'start_date'),
+         State('period-picker', 'end_date'),
+         State('pie-active-share', 'figure'),
+         State('pie-motorized-split', 'figure'),
+         State('pie-all-mobilities', 'figure'),
+         State('timeline-graph', 'figure'),
+         State('heatmap-day-hour', 'figure'),
+         State('annual-evolution-bar', 'figure'),
+         State('annual-seasonality-line', 'figure')],
+        prevent_initial_call=True
+    )
+    def export_report(n_clicks, start, end, f1, f2, f3, f4, f5, f6, f7):
+        if not n_clicks:
+            return None
+            
+        figures = {
+            "Part Modale (Vélos)": f1,
+            "Répartition Motorisée": f2,
+            "Toutes Mobilités": f3,
+            "Evolution Temporelle": f4,
+            "Matrice Horaire": f5
+        }
+        
+        # Filter None figures
+        valid_figures = {k: v for k, v in figures.items() if v is not None}
+        
+        # Filter data for the table
+        report_df = _filter_by_date(df, start, end)
+        
+        report_html = generate_html_report(report_df, valid_figures, start, end)
+        
+        return dict(content=report_html, filename=f"Rapport_Trafic_{start}_{end}.html")
 
     # -------------------------------------------------------------------------
     # Tab 1: Synthèse Globale
@@ -86,7 +130,7 @@ def register_callbacks(app, df):
             return html.Div("Pas de données."), no_data, no_data, no_data
 
         # 1. Filter Data
-        period_df = _filter_by_date(df, start_date, end_date)
+        period_df = _filter_by_date(df, start_date, end_date).copy()
             
         if period_df.empty:
             no_data = px.pie(title="Pas de données pour cette période")
