@@ -106,6 +106,12 @@ def build_dataset(source_path="..", output_path="../data/parquet_store"):
     with open(os.path.join(meta_dir, 'metadata.json'), 'w', encoding='utf-8') as f:
         json.dump(metadata, f, ensure_ascii=False, indent=4)
 
+    # Copy sites.json if present in source
+    sites_src = os.path.join(source_path, "sites.json")
+    if os.path.exists(sites_src):
+        print(f"Sites configuration found at {sites_src}, copying to data...")
+        shutil.copy2(sites_src, os.path.join(meta_dir, "sites.json"))
+
     # 3. Process and Save
     all_dfs = []
     

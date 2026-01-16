@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!-- Ombre -->
+  <ellipse cx="16" cy="29" rx="6" ry="2.5"
+           fill="#000000" fill-opacity="0.25"/>
+  
+  <!-- Pin -->
+  <path d="M16 2
+           C11.5 2 8 5.5 8 10
+           C8 15.5 13 21 15.2 24.3
+           C15.6 24.9 16.4 24.9 16.8 24.3
+           C19 21 24 15.5 24 10
+           C24 5.5 20.5 2 16 2 Z"
+        fill="#e53935" stroke="#b71c1c" stroke-width="1"/>
+
+  <!-- Cercle intérieur -->
+  <circle cx="16" cy="10" r="3.2" fill="#ffffff" stroke="#b71c1c" stroke-width="1"/>
+</svg>

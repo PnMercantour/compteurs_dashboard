@@ -35,6 +35,20 @@ def load_data(base_path="."):
         except Exception as e:
             print(f"Erreur lecture metadata: {e}")
 
+    # Load sites coords
+    sites_path = os.path.join(base_path, "data", "sites.json")
+    if os.path.exists(sites_path):
+        try:
+            with open(sites_path, 'r', encoding='utf-8') as f:
+                sites_data = json.load(f)
+                site_name = metadata.get('site_name')
+                if site_name and site_name in sites_data:
+                    coords = sites_data[site_name]
+                    metadata.update(coords)
+                    print(f"Coordonnées chargées pour {site_name}: {coords}")
+        except Exception as e:
+            print(f"Erreur lecture sites.json: {e}")
+
     # 1. Try Loading Optimized Parquet Store
     if os.path.exists(parquet_path):
         try:

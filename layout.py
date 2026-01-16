@@ -1,6 +1,8 @@
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 import pandas as pd
+import plotly.express as px
+import dash_leaflet as dl
 
 def create_layout(df):
     """
@@ -12,6 +14,8 @@ def create_layout(df):
     site_name = meta.get('site_name', 'COMPTEURS ROUTIERS').upper()
     d1_label = meta.get('direction_1', 'Sens 1')
     d2_label = meta.get('direction_2', 'Sens 2')
+    lat = meta.get('latitude', 0)
+    lon = meta.get('longitude', 0)
 
     # Pre-calculate min/max dates for picker default
     if not df.empty:
@@ -24,8 +28,10 @@ def create_layout(df):
     layout = dbc.Container([
         # Header
         dbc.Row([
-            dbc.Col(html.H2(f"DASHBOARD {site_name}", className="text-center text-uppercase fw-bold mb-0", style={'letterSpace': '2px'}), width=11),
+            dbc.Col(html.Img(src="https://media.mercantour.eu/logos/logo_auto-productions_pnm_quadri_txt_vert.png", style={'height': '80px'}), width=2, className="d-flex align-items-center"),
+            dbc.Col(html.H2(f"DASHBOARD {site_name}", className="text-center text-uppercase fw-bold mb-0", style={'letterSpace': '2px'}), width=8),
             dbc.Col([
+                dbc.Button("📍", id="map-btn", color="primary", outline=True, className="rounded-circle fw-bold shadow-sm me-2", style={"width": "35px", "height": "35px", "padding": "0"}, title="Voir la carte"),
                 dbc.Button("?", id="help-btn", color="secondary", className="rounded-circle text-black fw-bold shadow-sm", style={"width": "35px", "height": "35px", "padding": "0"}),
                 dbc.Popover([
                     dbc.PopoverHeader("Astuces Zoom & Navigation"),
@@ -40,7 +46,7 @@ def create_layout(df):
                         ], className="mb-2"),
                     ], className="small")
                 ], target="help-btn", trigger="focus", placement="bottom-end")
-            ], width=1, className="d-flex justify-content-end align-items-center")
+            ], width=2, className="d-flex justify-content-end align-items-center")
         ], className="mb-4 mt-4 align-items-center"),
 
         # Date Picker
@@ -200,7 +206,26 @@ def create_layout(df):
                     ])
                 ], fluid=True)
             ])
-        ])
+        ]),
+
+        # Map Modal
+        dbc.Modal([
+            dbc.ModalHeader(dbc.ModalTitle("Localisation du Compteur")),
+            dbc.ModalBody(
+                dl.Map(center=[lat, lon], zoom=13, children=[
+                    dl.TileLayer(),
+                    dl.Marker(position=[lat, lon]
+                    , icon=dict(
+                        iconUrl='/assets/pin_red.svg',
+                        iconSize=[30, 40],
+                        iconAnchor=[15, 35]
+                    ))
+                ], style={'width': '100%', 'height': '400px'})
+            ),
+            dbc.ModalFooter(
+                dbc.Button("Fermer", id="close-map-btn", className="ms-auto", n_clicks=0)
+            )
+        ], id="map-modal", size="lg", is_open=False),
         
     ], fluid=True, className="bg-light", style={'minHeight': '100vh', 'paddingBottom': '2rem'})
     

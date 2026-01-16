@@ -58,6 +58,17 @@ DAYS_ORDER_FR = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'D
 
 def register_callbacks(app, df):
     
+    # --- Map Modal Callback ---
+    @app.callback(
+        Output("map-modal", "is_open"),
+        [Input("map-btn", "n_clicks"), Input("close-map-btn", "n_clicks")],
+        [State("map-modal", "is_open")],
+    )
+    def toggle_map(n1, n2, is_open):
+        if n1 or n2:
+            return not is_open
+        return is_open
+
     # -------------------------------------------------------------------------
     # Tab 1: Synthèse Globale
     # -------------------------------------------------------------------------
