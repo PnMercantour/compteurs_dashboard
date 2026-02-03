@@ -223,7 +223,35 @@ def register_callbacks(app, df):
         freq_map = {'H': 'h', 'D': 'D', 'M': 'MS'}
         
         grouper = [pd.Grouper(key='Datetime', freq=freq_map.get(freq, 'D')), 'Group']
-        grouped = filtered_df.groupby(grouper).size().reset_index(name='Count')
+        
+        # Calculate counts
+        grouped_raw = filtered_df.groupby(grouper).size()
+
+        if freq != 'M':
+             # Ensure gaps result in breaks (NaN) instead of interpolated lines
+             # 1. Unstack groups to columns so we have a Datetime index
+             # fill_value=0 ensures that if a timestamp exists (any vehicle seen), 
+             # missing groups are 0 instead of NaN.
+             grouped_unstacked = grouped_raw.unstack(level='Group', fill_value=0)
+             
+             # 2. Resample to ensure all timestamps in the range are present (even empty ones)
+             # This introduces NaNs for completely missing periods (Winter)
+             grouped_resampled = grouped_unstacked.resample(freq_map.get(freq, 'D')).asfreq()
+
+             # For Hourly analysis: If a day has any data, assume missing hours are 0, not gaps
+             if freq == 'H':
+                 # Identify days that have measurements
+                 active_days = grouped_unstacked.index.floor('D').unique()
+                 # Find rows in resampled data belonging to those active days
+                 current_days = grouped_resampled.index.floor('D')
+                 mask_active_days = current_days.isin(active_days)
+                 # Fill NaNs with 0 only for hours within active days
+                 grouped_resampled.loc[mask_active_days] = grouped_resampled.loc[mask_active_days].fillna(0)
+             
+             # 3. Stack back to long format, keeping NaNs (dropna=False) so Plotly breaks the line
+             grouped = grouped_resampled.stack(future_stack=True).reset_index(name='Count')
+        else:
+             grouped = grouped_raw.reset_index(name='Count')
         
         # Color discrete map needs complex keys if we use Group, but Plotly handles it if we map base colors? 
         # Actually easier to let Plotly cycle or map manually if 'Group' matches COLOR_MAP key partially. 
