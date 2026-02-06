@@ -1,7 +1,5 @@
 from dash import dcc, html
 import dash_bootstrap_components as dbc
-import pandas as pd
-import plotly.express as px
 import dash_leaflet as dl
 
 def create_layout(df):
@@ -30,7 +28,7 @@ def create_layout(df):
         dbc.Row([
             dbc.Col(html.Img(src="https://media.mercantour.eu/logos/logo_auto-productions_pnm_quadri_txt_vert.png", style={'height': '80px'}), width=2, className="d-flex align-items-center"),
             dbc.Col([
-                html.H2(f"DASHBOARD {site_name}", className="mb-0 text-uppercase fw-bold", style={'letterSpace': '2px'}),
+                html.H2(f"DASHBOARD {site_name}", className="mb-0 text-uppercase fw-bold", style={'letterSpacing': '2px'}),
                 dbc.Button("📍", id="map-btn", color="light", className="ms-3 rounded-circle shadow-sm border-0 d-flex align-items-center justify-content-center", style={"width": "40px", "height": "40px", "fontSize": "1.4rem", "backgroundColor": "transparent"}, title="Voir la carte")
             ], width=8, className="d-flex justify-content-center align-items-center"),
             dbc.Col([
@@ -69,11 +67,13 @@ def create_layout(df):
                             id='period-picker',
                             min_date_allowed=min_date,
                             max_date_allowed=max_date,
-                            initial_visible_month=max_date,
+                            # initial_visible_month=max_date,
                             start_date=min_date, 
                             end_date=max_date,
                             display_format='DD/MM/YYYY',
-                            style={'border': '1px solid #ddd', 'borderRadius': '5px'}
+                            style={'border': '1px solid #ddd', 'borderRadius': '5px'},
+                            clearable=True,
+                            minimum_nights=0
                         ),
                         dbc.Button("📥", id="export-btn", color="success", outline=True, className="ms-3 rounded-circle shadow-sm", style={"width": "38px", "height": "38px", "padding": "0", "display": "flex", "alignItems": "center", "justifyContent": "center"}, title="Exporter le rapport")
                     ], className="d-flex align-items-center justify-content-center")

@@ -1,24 +1,9 @@
 import pandas as pd
 import plotly.io as pio
 import plotly.graph_objects as go
+from utils import compute_metrics
 
 # Helper for basic metrics
-def _compute_metrics_report(sub_df, days_total, days_jo, days_we):
-    if sub_df.empty:
-        return [0, 0, 0, 0, "-"]
-    total = len(sub_df)
-    tmj = int(round(total / max(1, days_total)))
-    sub_jo = sub_df[sub_df['DayType'] == 'JO']
-    tmj_jo = int(round(len(sub_jo) / max(1, days_jo))) if days_jo > 0 else 0
-    sub_we = sub_df[sub_df['DayType'] == 'WE']
-    tmj_we = int(round(len(sub_we) / max(1, days_we))) if days_we > 0 else 0
-    
-    if 'Speed' in sub_df.columns:
-         vt = sub_df['Speed'].mean()
-         vt_str = "-" if pd.isna(vt) else f"{vt:.0f} km/h"
-    else:
-         vt_str = "-"
-    return [total, tmj, tmj_jo, tmj_we, vt_str]
 
 def _generate_table_html(df):
     if df.empty:
@@ -53,7 +38,7 @@ def _generate_table_html(df):
             d_data = df[df['Direction'].astype(str).str.contains(sens_code)]
             if filter_cat:
                 d_data = d_data[d_data['UnifiedCategory'] == filter_cat]
-            m = _compute_metrics_report(d_data, nb_days_total, nb_days_jo, nb_days_we)
+            m = compute_metrics(d_data, nb_days_total, nb_days_jo, nb_days_we)
             for val in m:
                 formatted = val if isinstance(val, str) else f"{val:,}".replace(",", " ")
                 css_class = ""

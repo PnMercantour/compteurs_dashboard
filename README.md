@@ -1,7 +1,7 @@
-# Dashboard Compteurs Routiers
+# Dashboard Compteurs
 
-Tableau de bord d'analyse de trafic routier basé sur Dash et Plotly.  
-Cette application est **générique** : elle s'adapte automatiquement au site et aux directions détectés dans les fichiers CSV de données brutes. Elle se base sur l'export des mesures individuelles depuis la plateforme WebStation d'une station de comptage routier.
+Tableau de bord d'analyse de fréquentation (trafic routier et pédestre) basé sur Dash et Plotly.  
+Cette application est **générique** : elle s'adapte automatiquement au site et aux directions détectés dans les fichiers CSV de données brutes. Elle permet de visualiser et d'analyser les données de tous les types de compteurs.
 
 ## Fonctionnalités
 
@@ -29,7 +29,7 @@ Cette application est **générique** : elle s'adapte automatiquement au site et
 
 Avant de lancer l'application, vous devez convertir les fichiers CSV bruts en un format optimisé.
 
-1.  Placez vos fichiers `WebTraffic_*.csv` dans le dossier parent (racine du projet) ou spécifiez un dossier.
+1.  Placez vos fichiers d'export `.csv` dans le dossier parent (racine du projet) ou spécifiez un dossier.
 2.  Lancez le script de construction :
     ```bash
     # Si les CSV sont dans le dossier parent (défaut)
