@@ -39,7 +39,6 @@ class DataManager:
             return pd.DataFrame()
 
         # 1. Try Loading from Parquet (Only if csv_source_path is NOT provided to allow rebuilding)
-        # Or better: Logic decides. If csv_source_path is provided, we likely want to use it? 
         # But for the app we want parquet.
         # Let's check parquet first unless valid csvs are forced.
         # Check if Parquet exists
@@ -74,21 +73,24 @@ class DataManager:
         if not files:
             print(f"No files found for site {site_id} in {base_search_path}")
             return pd.DataFrame()
-
+        type_site = site_info.get('type', None)
         dfs = []
         for file in files:
             try:
-                df = self._read_csv_robust(file)
+                df = self._read_csv_robust(file, type_site)
                 if not df.empty:
                     dfs.append(df)
             except Exception as e:
                 print(f"Error reading {file}: {e}")
-                
+        
         if not dfs:
              return pd.DataFrame()
              
         full_df = pd.concat(dfs, ignore_index=True)
-        processed_df = process_data(full_df)
+        if type_site == 'pedestre':
+            processed_df = full_df
+        else:
+            processed_df = process_data(full_df)
 
         # Check for extracted directions (Propagate from CSVs to metadata.json)
         extracted_dirs = None
@@ -154,12 +156,20 @@ class DataManager:
             'longitude': site_info.get('coords', [0, 0])[1]
         }
 
-    def _read_csv_robust(self, file):
+    def _read_csv_robust(self, file, type):
         # Read all columns; avoid low_memory issues
-        try:
-             df = pd.read_csv(file, sep=';', encoding='latin1', on_bad_lines='skip', low_memory=False)
+        if type == 'routier':
+            return self._parse_routier_csv(file)
+        elif type == 'pedestre':
+            return self._parse_pedestrian_csv(file)
+        else:
+            raise Exception(f"Unknown site type: {type}, for file: {file}")
+
+    def _parse_routier_csv(self, file):
+        try:  
+            df = pd.read_csv(file, sep=';', encoding='latin1', on_bad_lines='skip', low_memory=False)
         except:
-             return pd.DataFrame()
+            return pd.DataFrame()
         
         # Extract Directions from Header
         extracted_directions = None
@@ -205,6 +215,43 @@ class DataManager:
         new_df['Weekday'] = new_df['Datetime'].dt.day_name()
         
         return new_df
+
+    def _parse_pedestrian_csv(self, file):
+        try:
+            df = pd.read_csv(file, skiprows=2,header=0,
+                            usecols=[0, 1], encoding='latin1', low_memory=False, names=['Datetime', 'Count'])
+                        
+            # Drop NaN counts or convert
+            df['Count'] = pd.to_numeric(df['Count'], errors='coerce')
+            
+            # Parse Datetime
+            # Format in CSV: 2018-06-14 00:00:00
+            df['Datetime'] = pd.to_datetime(df['Datetime'], format='mixed', errors='coerce')
+            df.dropna(subset=['Datetime'], inplace=True)
+            
+            # Localize
+            # Assuming data is in local time, we localize to TZ. If already tz-aware, we convert to TZ.
+            if df['Datetime'].dt.tz is None:
+                df['Datetime'] = df['Datetime'].dt.tz_localize(TZ, ambiguous='NaT', nonexistent='shift_forward')
+            else:
+                df['Datetime'] = df['Datetime'].dt.tz_convert(TZ)
+            
+            # Fill standard columns used by dashboard
+            df['UnifiedCategory'] = "Piétons"
+            df['Direction'] = "Global"
+            df['Speed'] = np.nan
+            
+            # Extract Temporal Features
+            df['Date'] = df['Datetime'].dt.date
+            df['Hour'] = df['Datetime'].dt.hour
+            df['Month'] = df['Datetime'].dt.month
+            df['Year'] = df['Datetime'].dt.year
+            df['Weekday'] = df['Datetime'].dt.day_name()
+            
+            return df
+        except Exception as e:
+            print(f"Error parsing pedestrian CSV {file}: {e}")
+            return pd.DataFrame()
 
 def _identify_columns(columns):
     """

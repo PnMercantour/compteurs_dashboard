@@ -13,7 +13,7 @@ def layout():
     
     # Map Markers
     markers = []
-    centers = []
+    centers = []    
 
     icon_routier = { "iconUrl": "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png", "iconSize": [25, 41] } 
     icon_pieton = { "iconUrl": "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png", "iconSize": [25, 41] }
@@ -28,7 +28,7 @@ def layout():
                      dl.Popup(html.Div([
                          html.H4(site['name']),
                          html.H6(f"Compteur {site['type']}"),
-                         dcc.Link("Voir le tableau de bord", href=f"/dashboard/{site['id']}")
+                         dcc.Link("Voir le tableau de bord", href=f"/dashboard/{site['type']}/{site['id']}")
                      ]))
                 ])
             )
@@ -41,8 +41,8 @@ def layout():
             # Placeholder image or map snapshot could go here
             dbc.CardBody([
                 html.H5(site['name'], className="card-title fw-bold"),
-                html.P("Consultation des données historiques de comptage.", className="card-text text-muted"),
-                dbc.Button("Accéder au tableau de bord", href=f"/dashboard/{site['id']}", color="primary", className="mt-3")
+                html.P(f"Compteur {site['type']}", className="card-text text-muted"),
+                dbc.Button("Accéder au tableau de bord", href=f"/dashboard/{site['type']}/{site['id']}", color="primary", className="mt-3")
             ])
         ], className="h-100 shadow-sm border-0"), width=12, md=6, lg=4, className="mb-4")
         cards.append(card)
@@ -52,7 +52,7 @@ def layout():
             dbc.Col([
                 html.Img(src="https://media.mercantour.eu/logos/logo_auto-productions_pnm_quadri_txt_vert.png", style={'height': '100px'}, className="mb-3"),
                 html.H1("Observatoire de la Fréquentation", className="display-4 fw-bold text-primary mb-3"),
-                html.P("Bienvenue sur le portail d'analyse des compteurs routiers du Parc national du Mercantour.", className="lead text-secondary")
+                html.P("Bienvenue sur le portail d'analyse des compteurs du Parc national du Mercantour.", className="lead text-secondary")
             ], width=12, className="text-center py-5")
         ]),
         

@@ -13,30 +13,40 @@ from utils import (
     FRENCH_MONTHS_MAP, 
     DAYS_ORDER_FR, 
     compute_metrics,
-    filter_by_date
+    filter_by_date,
+    filter_by_season,
 )
-from layout import create_layout as create_base_layout
+from layout import create_dashboard_layout, create_breadcrumb
 
-dash.register_page(__name__, path_template='/dashboard/<site_id>', title='Tableau de Bord')
+dash.register_page(__name__, path_template='/dashboard/routier/<site_id>', title='Tableau de Bord')
 
 # --- Helpers ---
 
-def _build_synthesis_table(period_df, start_date, end_date, metadata=None):
+def _build_synthesis_table(period_df, start_date, end_date, metadata=None, is_seasonal=False, theoritical_days=None):
     if metadata is None: metadata = {}
     d1_label = metadata.get('direction_1', 'Sens 1')
     d2_label = metadata.get('direction_2', 'Sens 2')
 
-    s_date = pd.to_datetime(start_date or period_df['Datetime'].min()).date()
-    e_date = pd.to_datetime(end_date or period_df['Datetime'].max()).date()
-    
-    date_range = pd.date_range(start=s_date, end=e_date, freq='D')
-    dates_df = pd.DataFrame({'Date': date_range})
+    if is_seasonal:
+        dates_df = pd.DataFrame({'Date': period_df['Date'].unique()})
+    else:
+        s_date = pd.to_datetime(start_date or period_df['Datetime'].min()).date()
+        e_date = pd.to_datetime(end_date or period_df['Datetime'].max()).date()
+        date_range = pd.date_range(start=s_date, end=e_date, freq='D')
+        dates_df = pd.DataFrame({'Date': date_range})
+        
+    dates_df['Date'] = pd.to_datetime(dates_df['Date'])
     dates_df['DayName'] = dates_df['Date'].dt.day_name()
     dates_df['IsWE'] = dates_df['DayName'].isin(['Saturday', 'Sunday'])
     
-    nb_days_total = len(dates_df)
-    nb_days_jo = len(dates_df[~dates_df['IsWE']])
-    nb_days_we = len(dates_df[dates_df['IsWE']])
+    if theoritical_days is None:
+        nb_days_total = len(dates_df)
+        nb_days_jo = len(dates_df[~dates_df['IsWE']])
+        nb_days_we = len(dates_df[dates_df['IsWE']])
+    else:
+        nb_days_total = theoritical_days['nb_full_days']
+        nb_days_jo = theoritical_days['nb_JO_days']
+        nb_days_we = theoritical_days['nb_WE_days']
     
     rows = []
     categories = ['Vélos', 'Motos', 'VL', 'PL']
@@ -84,19 +94,14 @@ def layout(site_id=None):
     if df.empty:
          return dbc.Container(html.Div(f"Pas de données trouvées pour le site: {site_id}", className="alert alert-warning mt-5"))
     
-    layout_content = create_base_layout(df)
+    # Unified layout
+    layout_content = create_dashboard_layout(df, dashboard_type="ROUTIER")
     
-    # Inject Store and Header
+    # Inject Store
     layout_content.children.insert(0, dcc.Store(id='current-site-id', data=site_id))
     
     # Add navigation breadcrumb
-    breadcrumb = dbc.Row(dbc.Col(
-        html.Div([
-            dcc.Link("Accueil", href="/", className="text-decoration-none text-secondary"),
-            html.Span(" / ", className="mx-2 text-muted"),
-            html.Span(df.attrs.get('metadata', {}).get('site_name', site_id), className="fw-bold")
-        ], className="my-3 small")
-    ))
+    breadcrumb = create_breadcrumb(df.attrs.get('metadata', {}).get('site_name', site_id))
     layout_content.children.insert(0, breadcrumb)
     
     return layout_content
@@ -115,9 +120,21 @@ def toggle_map(n1, n2, is_open):
     return is_open
 
 @callback(
+    Output("road-season-collapse", "is_open"),
+    Input("road-season-switch", "value")
+)
+def toggle_road_season_collapse(val):
+    return val
+
+@callback(
     Output("download-report", "data"),
     Input("export-btn", "n_clicks"),
-    [State('period-picker', 'start_date'),
+    [State('road-season-switch', 'value'),
+     State('road-season-start-month', 'value'),
+     State('road-season-start-day', 'value'),
+     State('road-season-end-month', 'value'),
+     State('road-season-end-day', 'value'),
+     State('period-picker', 'start_date'),
      State('period-picker', 'end_date'),
      State('pie-active-share', 'figure'),
      State('pie-motorized-split', 'figure'),
@@ -127,16 +144,27 @@ def toggle_map(n1, n2, is_open):
      State('current-site-id', 'data')],
     prevent_initial_call=True
 )
-def export_report(n_clicks, start, end, f1, f2, f3, f4, f5, site_id):
+def export_report(n_clicks, season_mode, sm, sd, em, ed, start, end, f1, f2, f3, f4, f5, site_id):
     if not n_clicks or not site_id:
         return None
     
     df = DataManager().get_data(site_id)
     figures = {"Part Modale (Vélos)": f1, "Répartition Motorisée": f2, "Toutes Mobilités": f3, "Evolution Temporelle": f4, "Matrice Horaire": f5}
     valid_figures = {k: v for k, v in figures.items() if v is not None}
+    
+    # 1. Date Range
     report_df = filter_by_date(df, start, end)
-    report_html = generate_html_report(report_df, valid_figures, start, end)
-    return dict(content=report_html, filename=f"Rapport_{site_id}_{start}_{end}.html")
+    
+    if season_mode:
+        # 2. Season Intersection
+        report_df, theoritical_days = filter_by_season(report_df, sm, sd, em, ed)
+        label = f"{start}_{end}_Saison_{sm:02d}-{sd:02d}_au_{em:02d}-{ed:02d}"
+    else:
+        label = f"{start}_{end}"
+
+
+    report_html = generate_html_report(report_df, valid_figures, label, theoritical_days if season_mode else None)
+    return dict(content=report_html, filename=f"Rapport_{site_id}_{label}.html")
 
 @callback(
     [Output('synthesis-table-container', 'children'),
@@ -145,9 +173,14 @@ def export_report(n_clicks, start, end, f1, f2, f3, f4, f5, site_id):
      Output('pie-all-mobilities', 'figure')],
     [Input('period-picker', 'start_date'),
      Input('period-picker', 'end_date'),
+     Input('road-season-switch', 'value'),
+     Input('road-season-start-month', 'value'),
+     Input('road-season-start-day', 'value'),
+     Input('road-season-end-month', 'value'),
+     Input('road-season-end-day', 'value'),
      Input('current-site-id', 'data')]
 )
-def update_synthesis(start_date, end_date, site_id):
+def update_synthesis(start_date, end_date, season_mode, sm, sd, em, ed, site_id):
     if not site_id:
         return dash.no_update, dash.no_update, dash.no_update, dash.no_update
         
@@ -157,13 +190,19 @@ def update_synthesis(start_date, end_date, site_id):
         no_data = px.pie(title="Aucune donnée disponible")
         return html.Div("Pas de données."), no_data, no_data, no_data
 
-    period_df = filter_by_date(df, start_date, end_date).copy()
-        
+    # 1. Filter by Date Range (First)
+    period_df = filter_by_date(df, start_date, end_date)
+    
+    # 2. Apply Seasonal Filter (Intersection)
+    if season_mode:
+        period_df, theoritical_days = filter_by_season(period_df, sm, sd, em, ed)
+        table = _build_synthesis_table(period_df, start_date, end_date, df.attrs.get('metadata'), is_seasonal=True, theoritical_days=theoritical_days)
+    else:
+        table = _build_synthesis_table(period_df, start_date, end_date, df.attrs.get('metadata'), is_seasonal=False, theoritical_days=None)
+
     if period_df.empty:
-        no_data = px.pie(title="Pas de données pour cette période")
+        no_data = px.pie(title="Pas de données pour cette période / saison")
         return html.Div("Pas de données sélectionnées."), no_data, no_data, no_data
-        
-    table = _build_synthesis_table(period_df, start_date, end_date, df.attrs.get('metadata'))
 
     # Optimized ModalGroup creation
     period_df['ModalGroup'] = np.where(period_df['UnifiedCategory'] == 'Vélos', 'Vélos', 'Motorisé')
@@ -197,13 +236,18 @@ def update_synthesis(start_date, end_date, site_id):
      Output('heatmap-day-hour', 'figure')],
     [Input('period-picker', 'start_date'),
      Input('period-picker', 'end_date'),
+     Input('road-season-switch', 'value'),
+     Input('road-season-start-month', 'value'),
+     Input('road-season-start-day', 'value'),
+     Input('road-season-end-month', 'value'),
+     Input('road-season-end-day', 'value'),
      Input('chart-freq', 'value'),
      Input('chart-cats', 'value'),
      Input('chart-directions', 'value'),
      Input('current-site-id', 'data')],
     [State('timeline-graph', 'relayoutData')]
 )
-def update_timeline(start_date, end_date, freq, cats, directions, site_id, relayout_data):
+def update_timeline(start_date, end_date, season_mode, sm, sd, em, ed, freq, cats, directions, site_id, relayout_data):
     if not site_id: return dash.no_update, dash.no_update
     
     df = DataManager().get_data(site_id)
@@ -212,6 +256,9 @@ def update_timeline(start_date, end_date, freq, cats, directions, site_id, relay
     if df.empty: return empty_figs
         
     period_df = filter_by_date(df, start_date, end_date)
+    if season_mode:
+        period_df, _ = filter_by_season(period_df, sm, sd, em, ed)
+            
     if period_df.empty: return empty_figs
 
     cats = cats or []

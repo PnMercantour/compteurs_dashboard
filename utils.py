@@ -7,6 +7,7 @@ COLOR_MAP = {
     'Motos': '#F39C12',    # Warning Orange
     'PL': '#C0392B',       # Alert Red
     'Vélos': '#16A085',    # Elegant Teal/Green
+    'Piétons': '#27AE60',  # Fresh Green
     'Motorisé': '#95A5A6', # Neutral Grey
     'Sens 1': '#8E44AD',   # Purple
     'Sens 2': '#2C3E50',   # Dark Blue
@@ -79,6 +80,55 @@ def filter_by_date(df, start_date, end_date):
         return df[mask].copy()
     except:
         return df
+
+def filter_by_season(df, start_month, start_day, end_month, end_day, road=True):
+    if df.empty: 
+        return df, 0
+    
+    # 1. Filtrage du DataFrame original (ton code optimisé)
+    sm, sd = int(start_month), int(start_day)
+    em, ed = int(end_month), int(end_day)
+    
+    dt_col = df['Datetime'].dt
+    current_md = dt_col.month * 100 + dt_col.day
+    
+    start_md = sm * 100 + sd
+    end_md = em * 100 + ed
+    
+    if start_md <= end_md:
+        mask = (current_md >= start_md) & (current_md <= end_md)
+    else:
+        mask = (current_md >= start_md) | (current_md <= end_md)
+    
+    df_filtered = df.loc[mask].copy()
+    if not road:
+        # si ce n'est pas un compteur routier, on ne calcule pas les jours théoriques car tous les jours de comptage apparaissent dans les données
+        # lorsqu'aucun passage n'est détecté (contrairement aux compteurs routiers où les jours sans passage sont absents du dataset)
+        return df_filtered
+
+    # 2. Calcul du calendrier théorique complet
+    # On prend les bornes réelles de ton dataset
+    first_date = df['Datetime'].min().normalize()
+    last_date = df['Datetime'].max().normalize()
+    
+    # On génère TOUS les jours entre ces deux dates
+    full_range = pd.date_range(start=first_date, end=last_date, freq='D')
+    full_range_df = pd.DataFrame({'Date': full_range})
+    
+    # 3. On applique le filtre saisonnier sur ce calendrier complet
+    range_md = full_range.month * 100 + full_range.day
+    
+    if start_md <= end_md:
+        range_mask = (range_md >= start_md) & (range_md <= end_md)
+    else:
+        range_mask = (range_md >= start_md) | (range_md <= end_md)
+    
+    # Le nombre de jours total (théorique) est la somme des True dans le masque
+    total_theoretical_days = range_mask.sum()
+    full_range_df['DayName'] = full_range_df['Date'].dt.day_name()
+    full_range_df['IsWE'] = full_range_df['DayName'].isin(['Saturday', 'Sunday'])
+    
+    return df_filtered, {'nb_full_days' : total_theoretical_days, 'nb_JO_days': len(full_range_df[(range_mask) & ~full_range_df['IsWE']]), 'nb_WE_days': len(full_range_df[range_mask & full_range_df['IsWE']])}
 
 def compute_metrics(sub_df, days_total, days_jo, days_we):
     """

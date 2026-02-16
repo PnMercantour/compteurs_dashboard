@@ -5,7 +5,7 @@ from utils import compute_metrics
 
 # Helper for basic metrics
 
-def _generate_table_html(df):
+def _generate_table_html(df, theoritical_days=None):
     if df.empty:
         return "<p class='text-muted'>Pas de données pour la table.</p>"
         
@@ -23,10 +23,15 @@ def _generate_table_html(df):
     dates_df['DayName'] = dates_df['Date'].dt.day_name()
     dates_df['IsWE'] = dates_df['DayName'].isin(['Saturday', 'Sunday'])
     
-    nb_days_total = len(dates_df)
-    nb_days_jo = len(dates_df[~dates_df['IsWE']])
-    nb_days_we = len(dates_df[dates_df['IsWE']])
-    
+    if theoritical_days is None: 
+        nb_days_total = len(dates_df)
+        nb_days_jo = len(dates_df[~dates_df['IsWE']])
+        nb_days_we = len(dates_df[dates_df['IsWE']])
+    else:
+        nb_days_total = theoritical_days['nb_full_days']
+        nb_days_jo = theoritical_days['nb_JO_days']
+        nb_days_we = theoritical_days['nb_WE_days']
+        
     categories = ['Vélos', 'Motos', 'VL', 'PL']
     
     # Build Rows HTML
@@ -75,7 +80,7 @@ def _generate_table_html(df):
     """
     return table_html
 
-def generate_html_report(df, figures, start_date, end_date):
+def generate_html_report(df, figures, label, theoretical_days=None):
     """
     Generates a standalone HTML report with logo, stats table, and figures.
     """
@@ -84,7 +89,7 @@ def generate_html_report(df, figures, start_date, end_date):
     logo_url = "https://media.mercantour.eu/logos/logo_auto-productions_pnm_quadri_txt_vert.png"
     
     # Generate Table
-    table_html = _generate_table_html(df)
+    table_html = _generate_table_html(df, theoretical_days)
     
     # Generate Charts HTML
     charts_html = ""
@@ -111,7 +116,7 @@ def generate_html_report(df, figures, start_date, end_date):
     <html lang="fr">
     <head>
         <meta charset="UTF-8">
-        <title>Rapport - {site_name}</title>
+        <title>Rapport - {site_name} - {label}</title>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
         <style>
             body {{ font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 2rem; background: #f8f9fa; color: #212529; }}
@@ -147,7 +152,7 @@ def generate_html_report(df, figures, start_date, end_date):
                 <div class="text-center flex-grow-1 mx-4">
                      <h1 class="report-title">RAPPORT DE TRAFIC</h1>
                      <h2 class="h5 text-muted text-uppercase mb-2">{site_name}</h2>
-                     <p class="report-subtitle mb-0 badge bg-light text-dark border">Période : {start_date} au {end_date}</p>
+                     <p class="report-subtitle mb-0 badge bg-light text-dark border">Période : {label}</p>
                 </div>
                 <div style="width: 120px;"></div> <!-- Spacer for balance -->
             </div>

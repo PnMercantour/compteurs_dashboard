@@ -10,7 +10,8 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # 1. Initialize App with Multi-Page Support
 app = Dash(__name__, 
            use_pages=True, 
-           external_stylesheets=[dbc.themes.LUX], 
+           external_stylesheets=[dbc.themes.LUX],
+           external_scripts=['https://cdn.plot.ly/plotly-locale-fr-latest.js'],
            title="Observatoire Trafic Mercantour",
            suppress_callback_exceptions=True)
 
@@ -24,4 +25,4 @@ app.layout = dbc.Container([
 
 # --- Main Execution ---
 if __name__ == '__main__':
-    app.run(debug=False, port=8050)
+    app.run(debug=True, port=8050)
